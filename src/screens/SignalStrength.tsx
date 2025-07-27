@@ -40,7 +40,7 @@ const styles = StyleSheet.create({
   },
   bar: {
     width: 4,
-    backgroundColor: 'purple',
+    backgroundColor: '#8764bc',
     borderRadius: 4,
   },
 });

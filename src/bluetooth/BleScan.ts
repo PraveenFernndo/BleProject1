@@ -25,17 +25,20 @@ const requestPermissions = async () => {
 
 };
 
-var status = true;
+var isScanning = false;
 
-export const BleScan = async (onDeviceFind: any) => {
+export const BleScan = async (onDeviceFind: any, searchStatus: (status: boolean) => void) => {
 
     StopBleScan();
 
     const permission = await requestPermissions();
 
-    if (permission) {
-        status = false;
+    if (permission && !isScanning) {
+
+        isScanning = true;
+
         console.log("Permissions granted, starting scan...");
+        searchStatus(true)
 
         manager.startDeviceScan(null, null, (error, device) => {
 
@@ -60,7 +63,10 @@ export const BleScan = async (onDeviceFind: any) => {
             }
         });
 
-        setTimeout(StopBleScan, 10000);
+        setTimeout(() => {
+            StopBleScan();
+            searchStatus(false)
+        }, 10000);
 
     } else {
         console.log("Permissions not granted");
@@ -69,49 +75,59 @@ export const BleScan = async (onDeviceFind: any) => {
 };
 
 export const StopBleScan = () => {
-    console.log("Stopping BLE scan...");
-    manager.stopDeviceScan();
-
+    if (isScanning) {
+        isScanning = false
+        console.log("Stopping BLE scan...");
+        manager.stopDeviceScan();
+    }
 };
+
+
+var isConnect = false;
 
 export const connectDevice = async (device: Device) => {
 
-    manager.stopDeviceScan();
-    try {
+    if (!isConnect) {
 
-        const connectedDevice = await manager.connectToDevice(device.id);
+        isConnect = true;
 
-        console.log("Connected to device123:", connectedDevice.name, "Device ID:", connectedDevice.id);
+        StopBleScan();
 
-        const discoveredServices = await connectedDevice.discoverAllServicesAndCharacteristics();
+        console.log("Device Name:", device.name, "Device id: ", device.id, "RSSI:", device.rssi)
 
-        const services = await discoveredServices.services();
+        try {
 
-        for (const service of services) {
-            console.log("Service UUID:", service.uuid);
+            const connectedDevice = await manager.connectToDevice(device.id);
+            console.log("Connected")
 
-            const characteristics = await service.characteristics();
-            for (const characteristic of characteristics) {
-                console.log("Characteristic UUID:", characteristic.uuid);
-            }
+            Toast.show({
+                visibilityTime: 2000,
+                position: "top",
+                type: "success",
+                text1: `Successfully Connected`
+            });
+
+            const discoveredServices = await connectedDevice.discoverAllServicesAndCharacteristics();
+
+            return true;
+        } catch (error) {
+
+
+            deviceDisconnect(device.id);
+            console.error("Connection error:", error);
+
+            Toast.show({
+                visibilityTime: 2000,
+                position: "top",
+                type: "error",
+                text1: `${error}`
+            });
+
+            return error;
         }
-
-        console.log("Connected to device:", connectedDevice.name, "Device ID:", connectedDevice.id);
-        return true;
-    } catch (error) {
-
-
+    } else if (isConnect) {
         deviceDisconnect(device.id);
-        console.error("Connection error:", error);
-
-         Toast.show({
-                    visibilityTime: 2000,
-                    position: "top",
-                    type: "error",
-                    text1: `${error}`
-                });
-
-        return error;
+        isConnect = false
     }
 
 }
@@ -125,6 +141,13 @@ export const deviceDisconnect = async (deviceId: string) => {
 
     } catch (error) {
         console.error("Error during disconnection:", error);
+
+        Toast.show({
+            visibilityTime: 2000,
+            position: "top",
+            type: "error",
+            text1: `${error}`
+        });
 
     }
 

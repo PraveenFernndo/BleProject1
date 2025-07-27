@@ -15,7 +15,6 @@ import AvailableDevices from './AvailableDevices';
 import { useNavigation } from '@react-navigation/native';
 import { HomeScreenNavigationProp } from '../navigation/navigation';
 import { StopBleScan } from '../bluetooth/BleScan';
-import { Device } from 'react-native-ble-plx';
 
 
 function Home(): React.JSX.Element {
@@ -37,34 +36,34 @@ function Home(): React.JSX.Element {
             <Text style={styles.buttonText}>Scan Devices Now</Text>
           </View>
         </TouchableOpacity>
+        {getAvailableDevices && (
+          <AvailableDevices
+            isVisible={true}
+            onClose={() => {
+              setAvailableDevices(false);
+              StopBleScan();
+            }}
+          />
+        )}
 
-        <AvailableDevices isVisible={getAvailableDevices} onClose={() => {
-          setAvailableDevices(false);
-          StopBleScan();
-        }}
-        />
+
+        <Button title="Device Details" onPress={() => {
+          navigation.navigate('DeviceDetails');
+        }} />
 
       </View>
-
-      <Button title="Device Details" onPress={() => {
-
-        navigation.navigate('DeviceDetails');
-
-
-      }} />
-
-      <View>
-      </View>
-
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   mainContainer: {
-    paddingTop: 30,
+    // paddingTop: 30, // Remove this line
     flex: 1,
-    alignItems: 'center',
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#8764bc"
   },
   mainHeading: {
     fontSize: 24,
@@ -74,9 +73,10 @@ const styles = StyleSheet.create({
   scanButton: {
     marginTop: 20,
     padding: 10,
-    backgroundColor: '#b42eb4ff',
+    backgroundColor: '#b816bbff',
     borderRadius: 5,
-    width: "100%"
+    width: 200, // Change from "100%" to a fixed width
+    alignSelf: "center", // Ensure button is centered
   },
   buttonText: {
     color: '#fff',
