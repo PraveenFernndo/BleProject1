@@ -5,9 +5,7 @@ import SignalStrength from './SignalStrength';
 import Toast from 'react-native-toast-message';
 import { BleScan, connectDevice, StopBleScan } from '../bluetooth/BleScan';
 import { Device } from 'react-native-ble-plx';
-
-
-{/* <Icon name="refresh" size={30} color="#8764bc" /> */ }
+import { getCurrentDevice, setCurrentDevice } from '../SaveDevice';
 
 
 interface Props {
@@ -24,7 +22,9 @@ export type DeviceAtr = {
 const AvailableDevices: React.FC<Props> = ({ isVisible, onClose }) => {
     const [getConnectedDeviceId, setConnectedDeviceId] = useState<string | null>(null);
     const [getSelectedDevice, setSelectedDevice] = useState<string | null>(null);
-    const [gtLastConnectedDevice, setLastConnectedDevice] = useState<string | null>(null);
+
+    // current device
+    const [gtLastConnectedDevice, setLastConnectedDevice] = useState<any | null>(null);
 
     const [getScanningDevices, setScanningDevices] = useState<boolean>(false);
 
@@ -34,9 +34,6 @@ const AvailableDevices: React.FC<Props> = ({ isVisible, onClose }) => {
 
 
     const item = { key: 'Halsa Baby' };
-
-    // getter and setter for previously connected devices
-    const [getPreviousDevices, setPreviousDevices] = useState<Device[]>([])
 
     // getter and setter for available devices
     const [getDevices, setDevices] = useState<Device[]>([]);
@@ -67,6 +64,23 @@ const AvailableDevices: React.FC<Props> = ({ isVisible, onClose }) => {
 
     }, [isVisible]);
 
+    useEffect(() => {
+
+        setCurrentDevice("1012", "Halsa Baby");
+
+        const fetchData = async () => {
+
+            // get current device data from async storage
+            const device = await getCurrentDevice("1012");
+
+            setLastConnectedDevice(device ?? null);
+
+        }
+
+        fetchData();
+
+    }, [])
+
 
 
     return (
@@ -90,6 +104,7 @@ const AvailableDevices: React.FC<Props> = ({ isVisible, onClose }) => {
                     </View>
 
                     <View style={styles.subHolder}>
+                        {/* available device list */}
                         <FlatList contentContainerStyle={{ paddingBottom: 30 }} data={getDevices} keyExtractor={(item) => item.id}
                             renderItem={({ item }) => (
                                 <TouchableOpacity onPress={async () => {
@@ -130,32 +145,54 @@ const AvailableDevices: React.FC<Props> = ({ isVisible, onClose }) => {
                             ListHeaderComponent={
                                 <View style={{ padding: 16 }}>
                                     <Text style={{ fontSize: 16, color: '#666', marginBottom: 10 }}>Current Device</Text>
-                                    <TouchableOpacity onPress={() => {
-                                        Alert.alert("Connecting to device", `Connecting to ${item.key}`);
-                                        setConnectedDeviceId(item.key);
-                                        setSelectedDevice(item.key);
-                                        Toast.show({
-                                            visibilityTime: 2000,
-                                            position: "top",
-                                            type: "success",
-                                            text1: `Connected to ${item.key}`
-                                        });
-                                    }}>
-                                        <View style={getSelectedDevice === item.key ? styles.selectedDeviceItem : styles.deviceItem}>
-                                            <SignalStrength rssi={-70} />
-                                            <View style={{ flex: 1, paddingLeft: 30 }}>
-                                                <Text style={{ fontSize: 18, fontWeight: 'bold' }}>{item.key}</Text>
-                                                <Text style={{ color: '#666' }}>{getSelectedDevice === item.key ? 'Connecting...' : 'Connect'}</Text>
-                                            </View>
 
-                                        </View>
-                                    </TouchableOpacity>
+                                    {/* current connected device list */}
+                                    <FlatList contentContainerStyle={{ paddingBottom: 30 }} data={getDevices} keyExtractor={(item) => item.id}
+                                        renderItem={({ item }) => (
+                                            <TouchableOpacity onPress={() => {
+                                                setConnectedDeviceId(item.id);
+                                                setSelectedDevice(item.name);
+                                                Toast.show({
+                                                    visibilityTime: 2000,
+                                                    position: "top",
+                                                    type: "success",
+                                                    text1: `Connected to ${item.id}`
+                                                });
+                                            }}>
+                                                <View style={getSelectedDevice === item.id ? styles.selectedDeviceItem : styles.deviceItem}>
+                                                    <SignalStrength rssi={-70} />
+                                                    <View style={{ flex: 1, paddingLeft: 30 }}>
+                                                        <Text style={{ fontSize: 18, fontWeight: 'bold' }}>{item.id}</Text>
+                                                        <Text style={{ color: '#666' }}>{getSelectedDevice === item.id ? 'Connecting...' : 'Connect'}</Text>
+                                                    </View>
+
+                                                </View>
+                                            </TouchableOpacity>
+
+
+
+                                        )}
+
+                                        ListEmptyComponent={
+                                            <View style={{ width: "100%", display: "flex", alignItems: "center" }}>
+                                                <Text style={{ fontSize: 12, color: "gray", opacity: 0.5, fontStyle: "italic" }}>No Devices Found</Text>
+                                            </View>
+                                        }
+
+                                    />
+
                                     <View style={styles.availableDeviceSection}>
                                         <Text style={{ fontSize: 16, color: '#666', marginRight: 10 }}>Available Devices</Text>
                                         {getScanningDevices && (
                                             <ActivityIndicator size="small" color="#8764bc" />)}
                                     </View>
 
+                                </View>
+                            }
+
+                            ListEmptyComponent={
+                                <View style={{ width: "100%", display: "flex", alignItems: "center" }}>
+                                    <Text style={{ fontSize: 12, color: "gray", opacity: 0.5, fontStyle: "italic" }}>No Devices Found</Text>
                                 </View>
                             }
 
@@ -168,7 +205,7 @@ const AvailableDevices: React.FC<Props> = ({ isVisible, onClose }) => {
                 <View style={styles.buttonsHolder}>
                     <TouchableOpacity onPress={() => {
 
-                    console.log(getScanningDevices)
+                        console.log(getScanningDevices)
 
                         if (getScanningDevices) {
                             StopBleScan();
@@ -183,7 +220,7 @@ const AvailableDevices: React.FC<Props> = ({ isVisible, onClose }) => {
 
                     }}>
                         <View style={styles.btnHolder}>
-                            <Text style={styles.buttons}>{getScanningDevices?"Stop":"Scan"}</Text>
+                            <Text style={styles.buttons}>{getScanningDevices ? "Stop" : "Scan"}</Text>
                         </View>
                     </TouchableOpacity>
                     <TouchableOpacity onPress={() => { isVisible = false; onClose() }}>
